@@ -221,15 +221,22 @@ Data distribution showing:
 
 ## Project Structure
 
+The notebook workflow has now been split into reusable Python modules under `src/`.
+
+Current script pipeline:
+
+```text
+src/load_data.py
+src/weat_data.py
+src/building_data.py
+src/final_train_data.py
+src/validate_final_data.py
+src/model_lgbm.py
+src/model_lstm.py
+src/main.py
 ```
-ML_Project/
-├── Final_file.ipynb          # Main project notebook with complete pipeline
-├── EDA*.ipynb                # Exploratory data analysis notebooks
-├── README.md                 # This file
-├── data.txt                  # Additional data/notes
-├── Graphs/                   # Visualization outputs
-└── Datast/                   # Data directory (train.csv, test.csv, etc.)
-```
+
+`src/main.py` is the main runner for the complete pipeline.
 
 ## Libraries Used
 
@@ -241,24 +248,72 @@ ML_Project/
 
 ## Usage
 
-To run the complete pipeline:
+The notebook workflow has been converted into a script-based pipeline under `src/`.
 
-1. Ensure all required datasets are in the `Datast/` directory
-2. Open `Final_file.ipynb` in Jupyter Notebook or JupyterLab
-3. Run all cells sequentially to:
-   - Load and preprocess data
-   - Perform exploratory data analysis
-   - Train the LightGBM model
-   - Evaluate model performance
-   - Generate predictions
+1. Download the dataset from Kaggle:
+
+   `https://www.kaggle.com/c/ashrae-energy-prediction/data`
+
+2. Place the required CSV files in the `Datast/` directory:
+
+   ```text
+   Datast/train.csv
+   Datast/test.csv
+   Datast/building_metadata.csv
+   Datast/weather_train.csv
+   Datast/weather_test.csv
+   ```
+
+3. Run the main pipeline:
+
+   ```powershell
+   python src/main.py
+   ```
+
+By default, this loads data, builds the final dataset, saves validation visuals, and trains/evaluates LightGBM.
+
+### Pipeline Options
+
+```powershell
+python src/main.py --model lgbm
+python src/main.py --model lstm
+python src/main.py --model both
+python src/main.py --skip-validation
+python src/main.py --model lstm --lstm-epochs 3
+```
+
+### Individual Stages
+
+```powershell
+python src/load_data.py
+python src/weat_data.py
+python src/building_data.py
+python src/final_train_data.py
+python src/validate_final_data.py
+python src/model_lgbm.py
+python src/model_lstm.py
+```
+
+### Validation Outputs
+
+`src/validate_final_data.py` saves:
+
+```text
+reports/figures/final_train_correlation_heatmap.png
+reports/figures/final_train_monthly_meter_reading.png
+reports/figures/final_train_hourly_meter_reading.png
+reports/figures/final_train_meter_type_distribution.png
+reports/figures/final_train_meter_reading_distribution.png
+```
 
 ## Model Output
 
 The model generates:
 - Training R² Score
 - Validation R² Score
-- Actual vs Predicted scatter plots
-- Feature importance analysis (from LightGBM)
+- Final dataset validation summaries
+- Final dataset visualizations in `reports/figures/`
+- LightGBM and optional LSTM evaluation metrics
 
 ## Future Enhancements
 
