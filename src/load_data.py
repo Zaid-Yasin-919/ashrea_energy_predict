@@ -4,7 +4,7 @@ import pandas as pd
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DATA_DIR = PROJECT_ROOT / "Datast"
+DATA_DIR = PROJECT_ROOT / "data" / "raw"
 
 
 def load_datasets(data_dir: Path = DATA_DIR) -> tuple[pd.DataFrame, ...]:

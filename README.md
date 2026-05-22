@@ -254,14 +254,14 @@ The notebook workflow has been converted into a script-based pipeline under `src
 
    `https://www.kaggle.com/c/ashrae-energy-prediction/data`
 
-2. Place the required CSV files in the `Datast/` directory:
+2. Place the required CSV files in the `data/raw/` directory:
 
    ```text
-   Datast/train.csv
-   Datast/test.csv
-   Datast/building_metadata.csv
-   Datast/weather_train.csv
-   Datast/weather_test.csv
+   data/raw/train.csv
+   data/raw/test.csv
+   data/raw/building_metadata.csv
+   data/raw/weather_train.csv
+   data/raw/weather_test.csv
    ```
 
 3. Run the main pipeline:
