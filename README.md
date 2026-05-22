@@ -331,30 +331,6 @@ The model generates:
 - All temporal features are cyclically encoded to capture seasonal patterns
 - Early stopping is used to prevent overfitting during model training
 
-## Known Code Limitations & Technical Debt
-
-The current codebase contains several logical, mathematical, and data-leakage issues that have been identified and documented for future resolution:
-
-> [!WARNING]
-> **Site 0 Meter 0 Unit Calibration Bug (`src/final_train_data.py`)**
-> The `0.293071` conversion factor for Site 0 electricity readings is applied **after** taking the log transform (`np.log1p`). Since $\log(1 + c \cdot x) \neq c \cdot \log(1 + x)$, this heavily distorts the scale of the target variable. The conversion should be performed on raw readings *before* log transformation.
-
-> [!WARNING]
-> **Double Log-Transform in Custom RMSLE Evaluator (`src/model_lgbm.py`)**
-> The target variable `meter_reading` is already log-transformed during preprocessing. The custom `rmsle_lgbm` metric applies `np.log1p` a second time to predictions and labels, resulting in incorrect metric calculations. The metric should compute simple RMSE on the log-transformed targets.
-
-> [!IMPORTANT]
-> **Data Leakage in LSTM Preprocessing (`src/model_lstm.py`)**
-> The `StandardScaler` is fitted on the entire feature set before the train-validation split is made. This leaks statistics from the validation set into training. The scaler must only be fit on training data and used to transform both subsets.
-
-> [!NOTE]
-> **Degenerate LSTM Sequence Length (`src/model_lstm.py`)**
-> LSTM inputs are reshaped to a sequence length of 1, processing each time step in complete isolation. This disables the recurrent mechanism's temporal learning capacity. Sequence datasets should be reformatted using rolling temporal windows for optimal LSTM performance.
-
-> [!NOTE]
-> **Precipitation Binning Gaps & Non-Exclusivity (`src/weat_data.py`)**
-> Strictly bounded checks (`<` and `>`) leave gaps where values exactly on boundaries (e.g., `5.0` or `15.0`) are not correctly classified. Additionally, rain indicators are not mutually exclusive (e.g., `20.0` precip depth flags both light and heavy rain). The logic should define continuous, mutually exclusive categories.
-
 ---
 
 **Author**: Group 12  
