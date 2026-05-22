@@ -119,39 +119,39 @@ The project utilizes four main datasets:
 ### Weather Analysis
 
 #### Monthly Temperature Trends
-![Monthly feels_like Trends](Graphs/output.png)
+![Monthly feels_like Trends](reports/figures/output.png)
 Comparison of feels-like and actual temperatures across months, showing clear seasonal patterns with peak temperatures in summer months (July-August) and lowest in winter months (December-January).
 
 #### Daily Temperature Patterns Over the Year
-![Feels-Like Temperature Trends Over the Year](Graphs/output2.png)
+![Feels-Like Temperature Trends Over the Year](reports/figures/output2.png)
 Scatter plot showing daily feels-like temperature variations across the year, with distinct seasonal cycles and day-to-day variability.
 
 #### Temperature Distribution by Site
-![Feels-Like Temperature Distribution by Site](Graphs/output4.png)
+![Feels-Like Temperature Distribution by Site](reports/figures/output4.png)
 Box plots showing temperature variations across different sites, revealing site-specific climate characteristics and temperature ranges.
 
 #### Seasonal Wind Speed Variations
-![Wind Speed Variations by Season](Graphs/output7.png)
+![Wind Speed Variations by Season](reports/figures/output7.png)
 Seasonal wind speed patterns showing consistency across seasons with occasional outliers and typical wind speed ranges.
 
 ### Feature Distribution & Correlations
 
 #### Feature Correlation Heatmap (Weather Data)
-![Feature Correlation Heatmap](Graphs/output5.png)
+![Feature Correlation Heatmap](reports/figures/output5.png)
 Comprehensive correlation matrix showing relationships between all features:
 - Strong correlation between site_id and building characteristics
 - Moderate correlation between precipitation features (light, moderate, heavy rain)
 - Seasonal patterns visible in cyclical encoding correlations
 
 #### Feature Correlation Heatmap (Final Dataset)
-![Feature Correlation Heatmap - Final Dataset](Graphs/output10.png)
+![Feature Correlation Heatmap - Final Dataset](reports/figures/output10.png)
 Correlation analysis of merged dataset with building and weather features:
 - Site_id shows strong correlation with building_id
 - Wind speed moderately correlates with dew temperature and precipitation
 - Most temporal features show weak correlation as expected
 
 #### Feature Distribution Box Plots
-![Feature Distribution Box Plots](Graphs/output9.png)
+![Feature Distribution Box Plots](reports/figures/output9.png)
 Distribution analysis of key features:
 - Meter readings show skewed distribution (transformed to log scale)
 - Square footage log shows clustered distribution with outliers
@@ -162,7 +162,7 @@ Distribution analysis of key features:
 ### Energy Consumption Patterns
 
 #### Hourly Energy Usage Pattern
-![Hourly Energy Usage Pattern](Graphs/output8.png)
+![Hourly Energy Usage Pattern](reports/figures/output8.png)
 Clear diurnal pattern in energy consumption:
 - Minimum consumption during late night hours (2-4 AM)
 - Steady increase through morning hours
@@ -170,7 +170,7 @@ Clear diurnal pattern in energy consumption:
 - Gradual decline in evening hours
 
 #### Monthly Average Meter Reading
-![Monthly Average Meter Reading](Graphs/output13.png)
+![Monthly Average Meter Reading](reports/figures/output13.png)
 Seasonal energy consumption trends:
 - Peak consumption in summer months (July-August)
 - Secondary peak in winter months (November-December)
@@ -178,14 +178,14 @@ Seasonal energy consumption trends:
 - Distinct pattern indicating climate-dependent usage
 
 #### Yearly Energy Consumption Trends
-![Yearly Energy Consumption Trends](Graphs/output7.png)
+![Yearly Energy Consumption Trends](reports/figures/output6.png)
 Daily energy consumption throughout the year showing:
 - Clear seasonal patterns with summer peaks
 - Day-to-day volatility influenced by weather and usage patterns
 - Consistent baseline consumption levels
 
 #### Energy Consumption by Meter Type
-![Total Energy Consumption vs. Efficiency by Meter Type](Graphs/output11.png)
+![Total Energy Consumption vs. Efficiency by Meter Type](reports/figures/output11.png)
 Meter type analysis showing:
 - Electricity dominates total consumption
 - Chilled water and steam usage varies by season
@@ -193,7 +193,7 @@ Meter type analysis showing:
 - Hot water shows lowest overall consumption
 
 #### Meter Type Distribution
-![Distribution of Meter Types](Graphs/output12.png)
+![Distribution of Meter Types](reports/figures/output12.png)
 Data distribution showing:
 - Electricity readings comprise ~60% of dataset
 - Chilled water readings ~25%
@@ -330,6 +330,30 @@ The model generates:
 - Site 0, Meter 0 readings were calibrated with a factor of 0.293071
 - All temporal features are cyclically encoded to capture seasonal patterns
 - Early stopping is used to prevent overfitting during model training
+
+## Known Code Limitations & Technical Debt
+
+The current codebase contains several logical, mathematical, and data-leakage issues that have been identified and documented for future resolution:
+
+> [!WARNING]
+> **Site 0 Meter 0 Unit Calibration Bug (`src/final_train_data.py`)**
+> The `0.293071` conversion factor for Site 0 electricity readings is applied **after** taking the log transform (`np.log1p`). Since $\log(1 + c \cdot x) \neq c \cdot \log(1 + x)$, this heavily distorts the scale of the target variable. The conversion should be performed on raw readings *before* log transformation.
+
+> [!WARNING]
+> **Double Log-Transform in Custom RMSLE Evaluator (`src/model_lgbm.py`)**
+> The target variable `meter_reading` is already log-transformed during preprocessing. The custom `rmsle_lgbm` metric applies `np.log1p` a second time to predictions and labels, resulting in incorrect metric calculations. The metric should compute simple RMSE on the log-transformed targets.
+
+> [!IMPORTANT]
+> **Data Leakage in LSTM Preprocessing (`src/model_lstm.py`)**
+> The `StandardScaler` is fitted on the entire feature set before the train-validation split is made. This leaks statistics from the validation set into training. The scaler must only be fit on training data and used to transform both subsets.
+
+> [!NOTE]
+> **Degenerate LSTM Sequence Length (`src/model_lstm.py`)**
+> LSTM inputs are reshaped to a sequence length of 1, processing each time step in complete isolation. This disables the recurrent mechanism's temporal learning capacity. Sequence datasets should be reformatted using rolling temporal windows for optimal LSTM performance.
+
+> [!NOTE]
+> **Precipitation Binning Gaps & Non-Exclusivity (`src/weat_data.py`)**
+> Strictly bounded checks (`<` and `>`) leave gaps where values exactly on boundaries (e.g., `5.0` or `15.0`) are not correctly classified. Additionally, rain indicators are not mutually exclusive (e.g., `20.0` precip depth flags both light and heavy rain). The logic should define continuous, mutually exclusive categories.
 
 ---
 
